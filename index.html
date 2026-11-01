@@ -1,0 +1,1671 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>自定义事件倒计时</title>
+
+  <style>
+    body {
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+      text-align: center;
+      padding-top: 50px;
+      background: #f5f5f5;
+      color: #333;
+      
+      /* 【新增】设置固定背景图 URL (替换为你想要的图片链接) */
+      background-image: url('https://assets.699pic.com/public/seo/photo/40007/6180.jpg_wh1200.jpg');
+  
+      /* 【新增】背景适配属性 */
+      background-size: cover;       /* 铺满屏幕 */
+      background-position: center;  /* 居中 */
+      background-repeat: no-repeat; /* 不平铺 */
+      min-height: 100vh;            /* 最小高度占满视口 */
+    }
+
+    h2 {
+      margin-bottom: 24px;
+      word-break: break-all;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.2); 
+  
+      /* 【修改点】把原来的 24px (或其他值) 改大 */
+      font-size: 36px;   
+  
+      /* 【可选】如果想更醒目，可以加粗或调整字间距 */
+      font-weight: bold;
+      letter-spacing: 6px;
+    }
+
+    .panel {
+      max-width: 760px;
+
+      /* 面板整体下移，露出更多背景 */
+      margin: 60px auto 30px;
+
+      /* 内部上方留白更大，视觉更通透 */
+      padding: 40px 24px 24px;
+
+      /* 面板原有磨砂玻璃背景 */
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    label {
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    input[type="datetime-local"],
+    input[type="text"] {
+      padding: 10px 12px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      outline: none;
+      transition: 0.2s;
+    }
+
+    input[type="datetime-local"]:focus,
+    input[type="text"]:focus {
+      border-color: #2563eb;
+    }
+
+    input:disabled {
+      background: #f1f5f9;
+      color: #64748b;
+      cursor: not-allowed;
+    }
+
+    .name-input {
+      width: 280px;
+    }
+
+    /* =========================================
+      按钮：与倒计时 .item 完全同款磨砂玻璃
+      包括鼠标悬浮效果也一致
+    ========================================= */
+
+    button {
+      appearance: none;
+      -webkit-appearance: none;
+
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      /* 与倒计时 .item 同款尺寸和圆角 */
+      padding: 10px 16px;
+      min-width: auto;
+      border-radius: 10px;
+
+      font-family: inherit;
+      font-size: 15px;
+      line-height: 1;
+      color: #fff;
+
+      /* 原主按钮颜色 #2563eb，同色半透明用于磨砂 */
+      background: rgba(37, 99, 235);
+
+      border: 1px solid rgba(255, 255, 255, 0.22);
+
+      box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18);
+
+      backdrop-filter: blur(14px) saturate(160%);
+      -webkit-backdrop-filter: blur(14px) saturate(160%);
+
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+
+      opacity: 1;
+
+      transition:
+        transform 0.2s ease,
+        background 0.3s ease,
+        border-color 0.3s ease,
+        box-shadow 0.3s ease,
+        opacity 0.2s ease;
+    }
+
+    /* 玻璃表面高光，与倒计时 .item 一致 */
+    button::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+
+      background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.22) 0%,
+        rgba(255, 255, 255, 0.08) 35%,
+        rgba(255, 255, 255, 0) 60%
+      );
+    }
+
+    /* 鼠标悬浮：与 .item:hover 一致，上浮并轻微变实 */
+    button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      background: rgba(37, 99, 235);
+      opacity: 1;
+    }
+
+    /* 按下：与 .item:active 一致，轻微缩放 */
+    button:active:not(:disabled) {
+      transform: scale(0.98);
+      background: rgba(37, 99, 235);
+      opacity: 1;
+    }
+
+    /* 键盘聚焦提示，不影响玻璃效果 */
+    button:focus-visible {
+      outline: 2px solid rgba(255, 255, 255, 0.45);
+      outline-offset: 2px;
+    }
+
+    /*=========================================
+      secondary 按钮
+      原颜色 #64748b，同色半透明磨砂
+    ========================================= */
+
+    button.secondary {
+      background: rgba(100, 116, 139);
+    }
+
+    button.secondary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      background: rgba(100, 116, 139);
+      opacity: 1;
+    }
+
+    button.secondary:active:not(:disabled) {
+      transform: scale(0.98);
+      background: rgba(100, 116, 139);
+      opacity: 1;
+    }
+
+    /* =========================================
+      禁用按钮
+      原颜色 #94a3b8，同色半透明磨砂
+    ========================================= */
+
+    button:disabled {
+      background: rgba(148, 163, 184);
+      color: rgba(255, 255, 255, 0.82);
+
+      cursor: not-allowed;
+      transform: none;
+      opacity: 0.78;
+    }
+
+    /*button:disabled:hover,
+    button:disabled:active {
+      transform: none;
+      background: rgba(148, 163, 184);
+      opacity: 0.78;
+    }*/
+
+    .status {
+      margin-top: 10px;
+      font-size: 15px;
+      color: #666;
+      min-height: 24px;
+      word-break: break-all;
+    }
+
+    .countdown {
+      margin-top: 40px;
+      display: inline-flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 14px;
+    }
+
+    /* =========================================
+      兼容不支持 backdrop-filter 的浏览器
+    ========================================= */
+
+    @supports not (
+      (backdrop-filter: blur(14px)) or
+      (-webkit-backdrop-filter: blur(14px))
+    ) {
+      button {
+        background: rgba(37, 99, 235, 0.86);
+      }
+
+      button:hover:not(:disabled),
+      button:active:not(:disabled) {
+        background: rgba(37, 99, 235, 0.92);
+      }
+
+      button.secondary {
+        background: rgba(100, 116, 139, 0.86);
+      }
+
+      button.secondary:hover:not(:disabled),
+      button.secondary:active:not(:disabled) {
+        background: rgba(100, 116, 139, 0.92);
+      }
+
+      button:disabled {
+        background: rgba(148, 163, 184, 0.72);
+      }
+
+      button:disabled:hover,
+      button:disabled:active {
+        background: rgba(148, 163, 184, 0.72);
+      }
+    }
+
+    /* 倒计时数字块：磨砂玻璃效果 */
+    .item {
+      position: relative;
+      overflow: hidden;
+
+      color: #fff;
+      padding: 18px 22px;
+      border-radius: 14px;
+      min-width: 90px;
+
+      background: rgba(51, 65, 85, 0.55); /* 默认深灰玻璃 */
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      box-shadow:
+      0 8px 24px rgba(0, 0, 0, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.18);
+
+      backdrop-filter: blur(14px) saturate(160%);
+      -webkit-backdrop-filter: blur(14px) saturate(160%);
+
+      transition:
+        background 0.3s ease,
+        border-color 0.3s ease,
+        box-shadow 0.3s ease,
+        transform 0.2s ease;
+    }
+
+    /* 顶部轻微高光，更像玻璃 */
+    .item::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+
+      background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.22) 0%,
+        rgba(255, 255, 255, 0.08) 35%,
+        rgba(255, 255, 255, 0) 60%
+      );
+    }
+
+    /* 未开始：默认深灰玻璃 */
+    .countdown.state-idle .item {
+      background: rgba(51, 65, 85, 0.58);
+      border-color: rgba(255, 255, 255, 0.20);
+    }
+
+    /* 未结束 / 进行中：绿色玻璃 */
+    .countdown.state-running .item {
+      background: rgba(22, 163, 74, 0.58);
+      border-color: rgba(134, 239, 172, 0.35);
+      box-shadow:
+        0 8px 24px rgba(22, 163, 74, 0.22),
+        inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    }
+
+    /* 已结束：红色玻璃 */
+    .countdown.state-ended .item {
+      background: rgba(220, 38, 38, 0.58);
+      border-color: rgba(252, 165, 165, 0.35);
+      box-shadow:
+        0 8px 24px rgba(220, 38, 38, 0.22),
+        inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    }
+
+    /* 鼠标悬浮效果，可选 */
+    .item:hover {
+      transform: translateY(-2px);
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    .countdown.state-running .item:hover {
+      background: rgba(22, 163, 74, 0.68);
+    }
+
+    .countdown.state-ended .item:hover {
+      background: rgba(220, 38, 38, 0.68);
+    }
+
+    .countdown.state-idle .item:hover {
+      background: rgba(51, 65, 85, 0.68);
+    }
+
+    /* 点击效果，可选 */
+    .item:active {
+      transform: scale(0.98);
+    }
+
+    .num {
+      font-size: 40px;
+      font-weight: bold;
+      line-height: 1;
+    }
+
+    .label {
+      font-size: 14px;
+      margin-top: 8px;
+      opacity: 0.85;
+    }
+    /* ===========================
+   移动端适配
+   =========================== */
+    *,
+    *::before,
+    *::after {
+    box-sizing: border-box;
+    }
+
+    html,
+    body {
+      overflow-x: hidden;
+    }
+
+    body {
+      min-height: 100vh;
+      min-height: 100dvh;
+      padding-top: 24px;
+    }
+
+    @media screen and (max-width: 768px) {
+      body {
+        padding: 20px 12px 40px;
+        background-image: url('https://c-ssl.duitang.com/uploads/item/201608/03/20160803090224_GsU2K.jpeg');
+      
+      }
+
+      h2 {
+        font-size: clamp(24px, 7vw, 36px);
+        margin-bottom: 16px;
+        line-height: 1.25;
+      }
+
+      .panel {
+        width: 100%;
+        max-width: 100%;
+        margin: 48px auto 20px;
+        padding: 16px;
+        border-radius: 14px;
+      }
+
+      .row {
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+
+      .row label {
+        flex: 0 0 100%;
+        text-align: left;
+        font-size: 14px;
+      }
+
+      input[type="text"],
+      input[type="datetime-local"] {
+        width: 100%;
+        min-width: 0;
+        padding: 12px;
+        font-size: 16px;
+        border-radius: 10px;
+      }
+
+      .name-input {
+        width: 100%;
+      }
+
+      button {
+        flex: 1 1 auto;
+        min-height: 44px;
+        padding: 12px 14px;
+        font-size: 14px;
+        border-radius: 10px;
+      }
+
+      .status {
+        font-size: 14px;
+        min-height: 22px;
+      }
+
+      .countdown {
+        gap: 10px;
+        margin-top: 20px;
+      }
+
+      .item {
+        min-width: 72px;
+        padding: 14px 10px;
+        border-radius: 10px;
+      }
+
+      .num {
+        font-size: 28px;
+      }
+
+      .label {
+        font-size: 12px;
+        margin-top: 6px;
+      }
+    }
+
+    @media screen and (max-width: 380px) {
+      h2 {
+        font-size: 22px;
+      }
+
+      .panel {
+        padding: 14px;
+      }
+
+      button {
+        padding: 10px 8px;
+        font-size: 13px;
+      }
+
+      .item {
+        min-width: 64px;
+        padding: 12px 8px;
+      }
+
+      .num {
+        font-size: 24px;
+      }
+
+      .label {
+        font-size: 11px;
+      }
+    }
+    
+    /* =========================================
+      移动端点击后避免按钮一直半透明 / 抬升
+    ========================================= */
+    @media (hover: none), (pointer: coarse) {
+      button:not(:disabled),
+      button.secondary:not(:disabled),
+      .item,
+      .music-player button:not(:disabled),
+      .music-player select,
+      .music-panel-toggle:not(:disabled) {
+        opacity: 1 !important;
+      }
+
+      button:hover:not(:disabled),
+      button:active:not(:disabled),
+      button:focus:not(:disabled),
+      button:focus-visible:not(:disabled),
+      button.secondary:hover:not(:disabled),
+      button.secondary:active:not(:disabled),
+      button.secondary:focus:not(:disabled),
+      button.secondary:focus-visible:not(:disabled),
+      .item:hover,
+      .item:active,
+      .item:focus,
+      .music-player button:hover:not(:disabled),
+      .music-player button:active:not(:disabled),
+      .music-player button:focus:not(:disabled),
+      .music-player select:hover,
+      .music-player select:active,
+      .music-player select:focus,
+      .music-panel-toggle:hover:not(:disabled),
+      .music-panel-toggle:active:not(:disabled),
+      .music-panel-toggle:focus:not(:disabled) {
+        transform: none !important;
+      }
+
+      .music-player button:hover,
+      .music-player select:hover,
+      .music-player .music-file-label:hover {
+        background-color: rgba(255, 255, 255, 0.35)!important;
+      }
+
+      .music-panel-toggle:hover {
+        background-color: rgba(255, 255, 255, 0.2)!important;
+      }
+
+      button:active:not(:disabled),
+      button.secondary:active:not(:disabled) {
+        transform: scale(0.96) !important;
+      }
+
+      .item:active {
+        transform: scale(0.97) !important;
+      }
+
+      .music-panel-toggle:active:not(:disabled) {
+        transform: scale(0.92) !important;
+      }
+
+      .music-player button:active:not(:disabled) {
+        transform: scale(0.94) !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h2 id="eventTitle">未命名倒计时</h2>
+
+  <div class="panel">
+    <div class="row">
+      <label for="eventName">事件名称：</label>
+      <input
+        type="text"
+        id="eventName"
+        class="name-input"
+        maxlength="50"
+        placeholder="请输入事件名称"
+      />
+    </div>
+
+    <div class="row">
+      <label for="targetTime">目标时间：</label>
+      <input type="datetime-local" id="targetTime" />
+    </div>
+
+    <div class="row">
+      <button id="startBtn">开始倒计时</button>
+      <button id="resetBtn" class="secondary">重置</button>
+    </div>
+
+    <div class="row">
+      <button id="plus1m" class="secondary">+1分钟</button>
+      <button id="plus1h" class="secondary">+1小时</button>
+      <button id="plus1d" class="secondary">+1天</button>
+    </div>
+
+    <div class="status" id="status">
+      请输入事件名称并选择目标时间
+    </div>
+  </div>
+
+  <div class="countdown state-idle" id="countdown">
+    <div class="item">
+      <div class="num" id="days">00</div>
+      <div class="label">天</div>
+    </div>
+
+    <div class="item">
+      <div class="num" id="hours">00</div>
+      <div class="label">时</div>
+    </div>
+
+    <div class="item">
+      <div class="num" id="minutes">00</div>
+      <div class="label">分</div>
+    </div>
+
+    <div class="item">
+      <div class="num" id="seconds">00</div>
+      <div class="label">秒</div>
+    </div>
+  </div>
+
+  <script>
+    //触摸监听
+    document.addEventListener("touchstart", function () {}, { passive: true });
+
+    const eventNameInput = document.getElementById("eventName");
+    //const saveNameBtn = document.getElementById("saveNameBtn");
+    const eventTitle = document.getElementById("eventTitle");
+
+    const targetInput = document.getElementById("targetTime");
+    const startBtn = document.getElementById("startBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const statusEl = document.getElementById("status");
+    const countdownEl = document.getElementById("countdown");
+
+    const daysEl = document.getElementById("days");
+    const hoursEl = document.getElementById("hours");
+    const minutesEl = document.getElementById("minutes");
+    const secondsEl = document.getElementById("seconds");
+
+    const plus1mBtn = document.getElementById("plus1m");
+    const plus1hBtn = document.getElementById("plus1h");
+    const plus1dBtn = document.getElementById("plus1d");
+
+    let timer = null;
+    let endTime = null;
+    let started = false;
+
+    const STORAGE_KEY = "customCountdownStateV2";
+
+    function getState() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+      } catch (e) {
+        return {};
+      }
+    }
+
+    const savedState = getState();
+
+    let currentEventName = savedState.name || "未命名倒计时";
+
+    function setState(patch = {}) {
+      const state = getState();
+
+      const nextState = {
+        ...state,
+        name: currentEventName,
+        targetValue: targetInput.value,
+        endTime: endTime,
+        started: started,
+        ...patch,
+        updatedAt: Date.now()
+      };
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
+    }
+
+    function pad(num) {
+      return String(num).padStart(2, "0");
+    }
+
+    // 将 Date 对象转换成 datetime-local 需要的格式：YYYY-MM-DDTHH:mm
+    function toLocalInputValue(date) {
+      const year = date.getFullYear();
+      const month = pad(date.getMonth() + 1);
+      const day = pad(date.getDate());
+      const hours = pad(date.getHours());
+      const minutes = pad(date.getMinutes());
+
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
+
+    // 解析 datetime-local 的本地时间，避免时区歧义
+    function parseLocalDateTime(value) {
+      if (!value) return NaN;
+
+      const [datePart, timePart = "00:00"] = value.split("T");
+
+      const [year, month, day] = datePart.split("-").map(Number);
+      const [hour, minute] = timePart.split(":").map(Number);
+
+      if ([year, month, day, hour, minute].some(item => Number.isNaN(item))) {
+        return NaN;
+      }
+
+      return new Date(year, month - 1, day, hour, minute, 0, 0).getTime();
+    }
+
+    function getTimeParts(ms) {
+      const totalSeconds = Math.floor(Math.max(ms, 0) / 1000);
+
+      const days = Math.floor(totalSeconds / 86400);
+      const hours = Math.floor((totalSeconds % 86400) / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+
+      return {
+        days,
+        hours,
+        minutes,
+        seconds
+      };
+    }
+
+    function formatParts(parts) {
+      return `${parts.days}天 ${parts.hours}小时 ${parts.minutes}分 ${parts.seconds}秒`;
+    }
+
+    function setDefaultTarget(forceDefault = false) {
+      const now = new Date();
+      targetInput.min = toLocalInputValue(now);
+
+      const state = getState();
+      const savedValue = forceDefault ? "" : state.targetValue;
+      const parsed = parseLocalDateTime(savedValue);
+
+      if (savedValue && !Number.isNaN(parsed) && parsed > Date.now()) {
+        targetInput.value = savedValue;
+      } else {
+        const defaultTarget = new Date(Date.now() + 60 * 60 * 1000);
+        targetInput.value = toLocalInputValue(defaultTarget);
+      }
+    }
+
+    function setDigits(parts) {
+      daysEl.textContent = pad(parts.days);
+      hoursEl.textContent = pad(parts.hours);
+      minutesEl.textContent = pad(parts.minutes);
+      secondsEl.textContent = pad(parts.seconds);
+    }
+
+    function resetDigits() {
+      setDigits({
+        days: 0,
+        hours: 0,
+        minutes: 0,
+        seconds: 0
+      });
+    }
+
+    function clearTimer() {
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+      }
+    }
+
+    function setContainerState(state) {
+      countdownEl.classList.remove("state-idle", "state-running", "state-ended");
+      countdownEl.classList.add(`state-${state}`);
+    }
+
+    function setControlsDisabled(disabled) {
+      startBtn.disabled = disabled;
+      targetInput.disabled = disabled;
+      plus1mBtn.disabled = disabled;
+      plus1hBtn.disabled = disabled;
+      plus1dBtn.disabled = disabled;
+    }
+
+    function applyEventName(name) {
+      currentEventName = name;
+      eventTitle.textContent = name;
+    }
+
+    function saveEventName() {
+      const name = eventNameInput.value.trim();
+
+      if (!name) {
+        alert("事件名称不能为空");
+        eventNameInput.value = currentEventName;
+        return false;
+      }
+
+      applyEventName(name);
+      setState({ name });
+
+      if (started) {
+        updateCountdown();
+      } else {
+        statusEl.textContent = `${currentEventName} 已准备就绪`;
+      }
+
+      return true;
+    }
+
+    function updateCountdown() {
+      if (!started || endTime === null) {
+        setContainerState("idle");
+        resetDigits();
+        statusEl.textContent = `${currentEventName} 已准备就绪`;
+        return;
+      }
+
+      const now = Date.now();
+      const diff = endTime - now;
+
+      if (diff > 0) {
+        // 还没结束：绿色，正常倒计时
+        const parts = getTimeParts(diff);
+        setDigits(parts);
+        setContainerState("running");
+        statusEl.textContent = `${currentEventName} 倒计时进行中`;
+      } else {
+        // 已经结束：红色，继续往后计时
+        const parts = getTimeParts(-diff);
+        setDigits(parts);
+        setContainerState("ended");
+        statusEl.textContent = `${currentEventName} 已结束，已过去 ${formatParts(parts)}`;
+      }
+    }
+
+    function startTimer() {
+      clearTimer();
+      updateCountdown();
+      timer = setInterval(updateCountdown, 1000);
+    }
+
+    function startCountdown() {
+      if (started) {
+        return;
+      }
+
+      const name = eventNameInput.value.trim();
+
+      if (!name) {
+        alert("请先填写事件名称");
+        eventNameInput.focus();
+        return;
+      }
+
+      applyEventName(name);
+
+      const value = targetInput.value;
+
+      if (!value) {
+        alert("请选择目标时间");
+        return;
+      }
+
+      const targetTime = parseLocalDateTime(value);
+
+      if (Number.isNaN(targetTime)) {
+        alert("目标时间格式不正确");
+        return;
+      }
+
+      /*if (targetTime <= Date.now()) {
+        alert("目标时间必须晚于当前时间");
+        return;
+      }*/
+
+      started = true;
+      endTime = targetTime;
+
+      setControlsDisabled(true);
+
+      setState({
+        name,
+        targetValue: value,
+        endTime,
+        started: true
+      });
+
+      startTimer();
+    }
+
+    function resetCountdown() {
+      clearTimer();
+
+      started = false;
+      endTime = null;
+
+      // 【新增】将当前事件名称重置为默认值
+      currentEventName = "未命名倒计时"; 
+  
+      // 【新增】更新输入框的值
+      eventNameInput.value = currentEventName;
+  
+      // 【新增】更新页面标题
+      eventTitle.textContent = currentEventName;
+
+      setControlsDisabled(false);
+      setDefaultTarget(true);
+      resetDigits();
+      setContainerState("idle");
+
+      statusEl.textContent = `${currentEventName} 已重置，请设置目标时间`;
+
+      setState({
+        started: false,
+        endTime: null,
+        targetValue: targetInput.value
+      });
+    }
+
+    function addToTarget(ms) {
+      if (started) {
+        return;
+      }
+
+      let baseTimestamp = targetInput.value
+        ? parseLocalDateTime(targetInput.value)
+        : Date.now();
+
+      if (Number.isNaN(baseTimestamp) || baseTimestamp <= Date.now()) {
+        baseTimestamp = Date.now();
+      }
+
+      const nextDate = new Date(baseTimestamp + ms);
+      targetInput.value = toLocalInputValue(nextDate);
+
+      setState({
+        targetValue: targetInput.value
+      });
+    }
+
+    function init() {
+      eventNameInput.value = currentEventName;
+      applyEventName(currentEventName);
+
+      const state = getState();
+
+      // 如果上次刷新前已经开始倒计时，则恢复运行状态
+      if (
+        state.started &&
+        typeof state.endTime === "number" &&
+        !Number.isNaN(state.endTime)
+      ) {
+        started = true;
+        endTime = state.endTime;
+
+        targetInput.value = toLocalInputValue(new Date(endTime));
+        targetInput.min = toLocalInputValue(
+          new Date(Math.min(Date.now(), endTime))
+        );
+
+        setControlsDisabled(true);
+        startTimer();
+      } else {
+        started = false;
+        endTime = null;
+
+        setDefaultTarget(false);
+        setControlsDisabled(false);
+        resetDigits();
+        setContainerState("idle");
+
+        statusEl.textContent = `${currentEventName} 已准备就绪`;
+
+        setState({
+          started: false,
+          endTime: null,
+          targetValue: targetInput.value
+        });
+      }
+    }
+
+    // 绑定事件
+    /*saveNameBtn.addEventListener("click", saveEventName);
+
+    eventNameInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        saveEventName();
+      }
+    });*/
+
+    startBtn.addEventListener("click", startCountdown);
+    resetBtn.addEventListener("click", resetCountdown);
+
+    plus1mBtn.addEventListener("click", () => {
+      addToTarget(60 * 1000);
+    });
+
+    plus1hBtn.addEventListener("click", () => {
+      addToTarget(60 * 60 * 1000);
+    });
+
+    plus1dBtn.addEventListener("click", () => {
+      addToTarget(24 * 60 * 60 * 1000);
+    });
+
+    targetInput.addEventListener("input", () => {
+      if (!started) {
+        setState({
+          targetValue: targetInput.value
+        });
+      }
+    });
+
+    targetInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        startCountdown();
+      }
+    });
+
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden && started) {
+        updateCountdown();
+      }
+    });
+
+    init();
+  </script>
+
+  <!-- 音乐播放器 -->
+
+  <!-- 音乐面板开关按钮 -->
+  <button id="musicPanelToggleBtn" class="music-panel-toggle" type="button">
+    🎵
+  </button>
+
+  <!-- 控制面板隐藏按钮 -->
+  <button id="panelToggleBtn" class="music-panel-toggle panel-toggle-left" type="button">
+    ☰
+  </button>
+
+  <!-- 音乐控制面板 -->
+  <div id="musicPlayer" class="music-player is-hidden">
+    <audio id="bgm" loop muted preload="auto"></audio>
+
+    <div class="music-row music-row-top">
+      <select id="musicSelect" class="glass-btn music-select"></select>
+    </div>
+
+    <!-- <label for="musicFile" class="music-file-label">选择本地音乐</label> -->
+    <!-- <input id="musicFile" type="file" accept="audio/*" hidden /> -->
+
+    <div class="music-row music-row-bottom">
+      <button id="prevMusicBtn" type="button">⏮︎</button>
+      <button id="musicBack15Btn" type="button">⏪︎</button>
+      <button id="musicToggleBtn" type="button">▶︎</button>
+      <button id="musicForward15Btn" type="button">⏩︎</button>
+      <button id="nextMusicBtn" type="button">⏭︎</button>
+    </div> 
+    <!-- <input id="musicVolume" type="range" min="0" max="1" step="0.01" value="0.5" /> -->
+  </div>
+
+  <style>
+    .music-player {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      z-index: 9999;
+
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+
+      padding: 10px 12px;
+      border-radius: 24px;
+
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    .music-row {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: nowrap;
+      width: 100%;
+    }
+
+    .music-row-top {
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.22);
+    }
+
+    .music-row-bottom {
+      padding-top: 2px;
+    }
+
+    /* 统一按钮、下拉框、文件选择按钮外观 */
+    .music-player button,
+    .music-player select,
+    .music-player .music-file-label {
+      box-sizing: border-box;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 36px;
+      padding: 0 14px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.35);
+      color: #222;
+      font: inherit;
+      font-weight: 600;
+      line-height: 1;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: background 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .music-player button:hover,
+    .music-player select:hover,
+    .music-player .music-file-label:hover {
+      background-color: rgba(255, 255, 255, 0.55);
+    }
+
+    .music-player button:active,
+    .music-player select:active,
+    .music-player .music-file-label:active {
+      transform: scale(0.97);
+    }
+
+    .music-player button:focus-visible,
+    .music-player select:focus-visible,
+    .music-player .music-file-label:focus-visible {
+      outline: 2px solid rgba(255, 255, 255, 0.75);
+      outline-offset: 2px;
+    }
+
+    /* 重点：去掉 select 原生外观 */
+    .music-player select {
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      padding-right: 34px;
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 8"><path d="M1 1l5 5 5-5" fill="none" stroke="%23222" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>');
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      background-size: 12px 8px;
+      max-width: 150px;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+
+    /* 下拉选项样式，桌面端有效，手机端多数由系统控制 */
+    .music-player select option {
+      background: rgba(255, 255, 255, 0.95);
+      color: #222;
+      padding: 8px 12px;
+    }
+
+    /* 音量滑块 
+    .music-player input[type="range"] {
+      width: 90px;
+      height: 36px;
+      cursor: pointer;
+      accent-color: rgba(255, 255, 255, 0.75);
+    }
+
+    /* 音乐面板开关按钮 */
+    .music-panel-toggle {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      z-index: 10000;
+
+      width: 48px;
+      height: 48px;
+      padding: 0;
+
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 999px;
+
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+
+      color: #222;
+      font-size: 22px;
+      line-height: 1;
+      cursor: pointer;
+
+      box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.45);
+
+      transition:
+        background 0.18s ease,
+        transform 0.12s ease,
+        box-shadow 0.18s ease;
+
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    button.music-panel-toggle:hover {
+      background: rgba(255, 255, 255, 0.55);
+      box-shadow:
+        0 10px 26px rgba(0, 0, 0, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    }
+
+    .music-panel-toggle:active {
+      transform: scale(0.94);
+      background: rgba(255, 255, 255, 0.55);
+    }
+
+    /* 音乐面板默认位置往上挪一点，避免挡住开关按钮 */
+    .music-player {
+      bottom: 76px !important;
+    }
+
+    /* 隐藏状态 */
+    .music-player.is-hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transform: translateY(12px) scale(0.98);
+    }
+
+    /* 给音乐面板加过渡动画 */
+    .music-player {
+      transition:
+        opacity 0.2s ease,
+        transform 0.2s ease,
+        visibility 0.2s ease;
+    }
+
+    /* 左侧控制面板开关按钮 */
+    .panel-toggle-left {
+      left: 16px;
+      right: auto;
+    }
+
+    /* 控制面板隐藏动画：保留占位，不让下方倒计时移动 */
+    .panel {
+      transition:
+        opacity 0.25s ease,
+        transform 0.25s ease,
+        visibility 0s linear 0s;
+    }
+
+    .panel.is-hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+
+      /* 轻微向下/缩小隐藏，可按喜好改 */
+      transform: translateY(-10px) scale(0.98);
+
+      /* 隐藏动画结束后再把 visibility 设为 hidden，避免淡出过程突然消失 */
+      transition:
+        opacity 0.25s ease,
+        transform 0.25s ease,
+        visibility 0s linear 0.25s;
+    }
+
+    /* 手机端适配 */
+    @media (max-width: 520px) {
+      .panel-toggle-left {
+        left: 12px;
+        right: auto;
+      }
+    }
+
+    /* 手机端适配 */
+  @media (max-width: 520px) {
+    .music-player {
+      left: 12px;
+      right: 12px;
+      bottom: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+      border-radius: 24px;
+    }
+
+    .music-player button,
+    .music-player select,
+    .music-player .music-file-label {
+      height: 34px;
+      padding: 0 12px;
+      font-size: 13px;
+    }
+
+    .music-player select {
+      max-width: 130px;
+      padding-right: 30px;
+      background-position: right 10px center;
+    }
+
+    .music-player input[type="range"] {
+      width: 80px;
+    }
+
+    .music-panel-toggle {
+      right: 12px;
+      bottom: 12px;
+      width: 44px;
+      height: 44px;
+      font-size: 20px;
+    }
+
+    .music-player {
+      bottom: 68px !important;
+    }
+  }
+  </style>
+
+  <script>
+    const bgm = document.getElementById("bgm");
+    const musicSelect = document.getElementById("musicSelect");
+    const musicToggleBtn = document.getElementById("musicToggleBtn");
+    const prevMusicBtn = document.getElementById("prevMusicBtn");
+    const nextMusicBtn = document.getElementById("nextMusicBtn");
+    const musicVolume = document.getElementById("musicVolume");
+    const musicForward15Btn = document.getElementById("musicForward15Btn");
+    const musicBack15Btn = document.getElementById("musicBack15Btn");
+
+    // 在这里配置你的歌曲列表
+    const songs = [
+      {
+        name: "生日快乐歌",
+        src: "格格 - 生日祝福歌.mp3"
+      },
+      /*{
+        name: "恋は切な",
+        src: "安瀬聖 - 恋は切なく.mp3"
+      },
+      {
+        name: "Canon in D",
+        src: "Johann Pachelbel, Chris Snelling - Canon in D.mp3"
+      },
+      {
+        name: "Floria",
+        src: "Tomohisa Sako - Floria.m4a"
+      }*/
+    ];
+
+    let currentSongIndex = 0;
+    let isPlaying = false;
+    let soundUnlocked = false;
+
+    function unlockSoundByUserGesture(event) {
+      if (!bgm || soundUnlocked) return;
+
+      const target = event && event.target;
+
+      const isInMusicControls =
+        target &&
+        typeof target.closest === "function" &&
+        target.closest(".music-player, .music-panel-toggle");
+
+      soundUnlocked = true;
+
+      // 取消静音
+      bgm.muted = false;
+      bgm.removeAttribute("muted");
+
+      // 防止音量被设成 0
+      bgm.volume = 1;
+
+      /*
+        如果用户不是点音乐控件，就直接尝试播放/继续播放。
+        如果用户点的是音乐控件，就交给控件自己的 click 事件处理，
+        避免“点播放按钮结果被全局解锁逻辑提前播放，然后按钮又切成暂停”。
+      */
+      if (!isInMusicControls) {
+        const playPromise = bgm.play();
+        if (playPromise && typeof playPromise.catch === "function") {
+          playPromise.catch(() => {});
+        }
+      }
+
+      isPlaying = !bgm.paused;
+      updatePlayButton();
+
+      document.removeEventListener("pointerdown", unlockSoundByUserGesture, true);
+      document.removeEventListener("touchstart", unlockSoundByUserGesture, true);
+      document.removeEventListener("click", unlockSoundByUserGesture, true);
+      document.removeEventListener("keydown", unlockSoundByUserGesture, true);
+    }
+
+    document.addEventListener("pointerdown", unlockSoundByUserGesture, true);
+    document.addEventListener("touchstart", unlockSoundByUserGesture, true);
+    document.addEventListener("click", unlockSoundByUserGesture, true);
+    document.addEventListener("keydown", unlockSoundByUserGesture, true);
+
+    // 初始化音量
+    if (bgm && musicVolume) {
+      bgm.volume = Number(musicVolume.value);
+    }
+
+    // 生成歌曲下拉框
+    function initMusicSelect() {
+      if (!musicSelect) return;
+
+      musicSelect.innerHTML = "";
+
+      songs.forEach((song, index) => {
+        const option = document.createElement("option");
+        option.value = index;
+        option.textContent = song.name;
+        musicSelect.appendChild(option);
+      });
+
+      musicSelect.value = currentSongIndex;
+    }
+
+    // 加载指定歌曲
+    function loadSong(index, autoplay = false) {
+      if (!bgm) return;
+
+      if (index < 0) {
+        index = songs.length - 1;
+      }
+
+      if (index >= songs.length) {
+        index = 0;
+      }
+
+      currentSongIndex = index;
+
+      const song = songs[currentSongIndex];
+
+      bgm.src = song.src;
+      bgm.currentTime = 0;
+      bgm.load();
+
+      if (musicSelect) {
+        musicSelect.value = currentSongIndex;
+      }
+
+      if (autoplay) {
+        playMusic();
+      } else {
+        updatePlayButton();
+      }
+    }
+
+    // 播放音乐
+    async function playMusic() {
+      if (!bgm) return;
+
+      /*
+        没有用户交互前，只允许静音自动播放。
+        用户触摸/点击/按键后，soundUnlocked 会变成 true，此时不再强制静音。
+      */
+      if (!soundUnlocked) {
+        bgm.muted = true;
+      }
+
+      try {
+        await bgm.play();
+        isPlaying = true;
+        updatePlayButton();
+      } catch (err) {
+        console.warn("音乐播放失败，尝试静音播放：", err);
+
+        // 如果有声播放失败，退回静音播放
+        if (!bgm.muted) {
+          bgm.muted = true;
+
+          try {
+            await bgm.play();
+            isPlaying = true;
+            updatePlayButton();
+          } catch (e) {
+            isPlaying = false;
+            updatePlayButton();
+          }
+        } else {
+          isPlaying = false;
+          updatePlayButton();
+        }
+      }
+    }
+
+    // 暂停音乐
+    function pauseMusic() {
+      if (!bgm) return;
+
+      bgm.pause();
+      isPlaying = false;
+      updatePlayButton();
+    }
+
+    // 更新播放按钮文字
+    function updatePlayButton() {
+      if (!musicToggleBtn) return;
+
+      musicToggleBtn.textContent = isPlaying ? "⏸︎" : "▶︎";
+    }
+
+    // 播放 / 暂停按钮
+    if (musicToggleBtn) {
+      musicToggleBtn.addEventListener("click", () => {
+        if (!bgm.src) {
+          loadSong(currentSongIndex, true);
+          return;
+        }
+
+        if (isPlaying) {
+          pauseMusic();
+        } else {
+          playMusic();
+        }
+      });
+    }
+
+    // 下拉框选择歌曲
+    if (musicSelect) {
+      musicSelect.addEventListener("change", () => {
+        const index = Number(musicSelect.value);
+        loadSong(index, isPlaying);
+      });
+    }
+
+    // 上一首
+    if (prevMusicBtn) {
+      prevMusicBtn.addEventListener("click", () => {
+        loadSong(currentSongIndex - 1, isPlaying);
+      });
+    }
+
+    // 下一首
+    if (nextMusicBtn) {
+      nextMusicBtn.addEventListener("click", () => {
+        loadSong(currentSongIndex + 1, isPlaying);
+      });
+    }
+
+    // 音量控制
+    if (musicVolume && bgm) {
+      musicVolume.addEventListener("input", () => {
+        bgm.volume = Number(musicVolume.value);
+      });
+    }
+
+    // 音乐前进 / 后退
+    function seekMusic(deltaSeconds) {
+      if (!bgm || !bgm.src) return;
+
+      const currentTime = bgm.currentTime || 0;
+      const duration = bgm.duration;
+
+      let newTime = currentTime + deltaSeconds;
+
+      if (newTime < 0) {
+        newTime = 0;
+      }
+
+      if (Number.isFinite(duration) && newTime > duration) {
+        newTime = duration;
+      }
+
+      bgm.currentTime = newTime;
+    }
+
+    // 前进15秒 = 快进15秒
+    if (musicForward15Btn) {
+      musicForward15Btn.addEventListener("click", () => {
+        seekMusic(15);
+      });
+    }
+
+    // 倒退15秒 = 后退15秒
+    if (musicBack15Btn) {
+      musicBack15Btn.addEventListener("click", () => {
+        seekMusic(-15);
+      });
+    }
+
+    // 歌曲播放结束后自动下一首
+    if (bgm) {
+      bgm.addEventListener("ended", () => {
+        loadSong(currentSongIndex + 1, isPlaying);
+      });
+    }
+
+    // 初始化
+    initMusicSelect();
+    loadSong(0, true);
+
+    (function () {
+      const musicPanelToggleBtn = document.getElementById("musicPanelToggleBtn");
+      const musicPlayer = document.getElementById("musicPlayer") || document.querySelector(".music-player");
+
+      if (!musicPanelToggleBtn || !musicPlayer) return;
+
+      function updatePanelState() {
+        const isHidden = musicPlayer.classList.contains("is-hidden");
+
+        musicPanelToggleBtn.textContent = isHidden ? "🎵" : "✕";
+        musicPanelToggleBtn.setAttribute("aria-expanded", String(!isHidden));
+        musicPlayer.setAttribute("aria-hidden", String(isHidden));
+      }
+
+      musicPanelToggleBtn.addEventListener("click", function () {
+        musicPlayer.classList.toggle("is-hidden");
+        updatePanelState();
+      });
+
+      updatePanelState();
+    })();
+
+    (function () {
+      const panel = document.querySelector(".panel");
+      const panelToggleBtn = document.getElementById("panelToggleBtn");
+
+      if (!panel || !panelToggleBtn) return;
+
+      const PANEL_HIDDEN_KEY = "customCountdownPanelHidden";
+
+      function updatePanelToggleState() {
+        const isHidden = panel.classList.contains("is-hidden");
+
+        panelToggleBtn.textContent = isHidden ? "☰" : "✕";
+        panelToggleBtn.setAttribute("aria-expanded", String(!isHidden));
+        panel.setAttribute("aria-hidden", String(isHidden));
+      }
+
+      // 读取上次状态
+      try {
+        if (localStorage.getItem(PANEL_HIDDEN_KEY) === "true") {
+          panel.classList.add("is-hidden");
+        }
+      } catch (e) {}
+
+      updatePanelToggleState();
+
+      panelToggleBtn.addEventListener("click", function () {
+        const willHide = !panel.classList.contains("is-hidden");
+
+        panel.classList.toggle("is-hidden", willHide);
+
+        try {
+          localStorage.setItem(PANEL_HIDDEN_KEY, String(willHide));
+        } catch (e) {}
+
+        updatePanelToggleState();
+      });
+    })();
+  </script>
+
+</body>
+</html>
