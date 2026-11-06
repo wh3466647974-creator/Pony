@@ -399,7 +399,7 @@
     @media screen and (max-width: 768px) {
       body {
         padding: 20px 12px 40px;
-        background-image: url('https://c-ssl.duitang.com/uploads/item/201608/03/20160803090224_GsU2K.jpeg');
+        background-image: url('https://a-ho-img.dtstatic.com/uploads/item/202003/03/20200303145658_f3Nsc.jpeg');
       
       }
 
@@ -1251,11 +1251,11 @@
         visibility 0.2s ease;
     }
 
-    /* 左侧控制面板开关按钮 */
+    /* 左侧控制面板开关按钮 
     .panel-toggle-left {
       left: 16px;
       right: auto;
-    }
+    }*/
 
     /* 控制面板隐藏动画：保留占位，不让下方倒计时移动 */
     .panel {
@@ -1644,7 +1644,7 @@
         panel.setAttribute("aria-hidden", String(isHidden));
       }
 
-      // 读取上次状态
+      /* 读取上次状态
       try {
         if (localStorage.getItem(PANEL_HIDDEN_KEY) === "true") {
           panel.classList.add("is-hidden");
@@ -1662,6 +1662,24 @@
           localStorage.setItem(PANEL_HIDDEN_KEY, String(willHide));
         } catch (e) {}
 
+        updatePanelToggleState();
+      });*/
+
+      // 刷新页面后强制显示控制面板
+      panel.classList.remove("is-hidden");
+      panel.setAttribute("aria-hidden", "false");
+
+      // 可选：清掉之前保存的隐藏状态
+      try {
+        localStorage.removeItem("customCountdownPanelHidden");
+      } catch (e) {}
+
+      updatePanelToggleState();
+
+      panelToggleBtn.addEventListener("click", function () {
+        const willHide = !panel.classList.contains("is-hidden");
+
+        panel.classList.toggle("is-hidden", willHide);
         updatePanelToggleState();
       });
     })();
