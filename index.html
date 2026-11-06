@@ -287,7 +287,7 @@
       border-radius: 14px;
       min-width: 90px;
 
-      background: rgba(51, 65, 85, 0.55); /* 默认深灰玻璃 */
+      background: rgba(51, 65, 85, 0.58); /* 默认深灰玻璃 */
       border: 1px solid rgba(255, 255, 255, 0.22);
       box-shadow:
       0 8px 24px rgba(0, 0, 0, 0.18),
@@ -318,9 +318,9 @@
       );
     }
 
-    /* 未开始：默认深灰玻璃 */
+    /* 未开始：默认深灰玻璃 
     .countdown.state-idle .item {
-      background: rgba(51, 65, 85, 0.58);
+      /*background: rgba(51, 65, 85, 0.58);
       border-color: rgba(255, 255, 255, 0.20);
     }
 
@@ -345,7 +345,7 @@
     /* 鼠标悬浮效果，可选 */
     .item:hover {
       transform: translateY(-2px);
-      background: rgba(255, 255, 255, 0.16);
+      background: rgba(255, 255, 255, 0.68);
     }
 
     .countdown.state-running .item:hover {
@@ -399,8 +399,7 @@
     @media screen and (max-width: 768px) {
       body {
         padding: 20px 12px 40px;
-        background-image: url('https://a-ho-img.dtstatic.com/uploads/item/202003/03/20200303145658_f3Nsc.jpeg');
-      
+        background-image: url('https://marketplace.canva.cn/EAFb7_6PVZE/2/0/450w/canva-Y0Kr2LZa9ng.jpg');
       }
 
       h2 {
@@ -509,11 +508,14 @@
     @media (hover: none), (pointer: coarse) {
       button:not(:disabled),
       button.secondary:not(:disabled),
-      .item,
       .music-player button:not(:disabled),
       .music-player select,
       .music-panel-toggle:not(:disabled) {
         opacity: 1 !important;
+      }
+
+      .item {
+        background: rgba(51, 65, 85, 0.58) !important;
       }
 
       button:hover:not(:disabled),
@@ -1251,11 +1253,11 @@
         visibility 0.2s ease;
     }
 
-    /* 左侧控制面板开关按钮 
+    /* 左侧控制面板开关按钮 */
     .panel-toggle-left {
       left: 16px;
       right: auto;
-    }*/
+    }
 
     /* 控制面板隐藏动画：保留占位，不让下方倒计时移动 */
     .panel {
